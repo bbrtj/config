@@ -157,7 +157,8 @@ function! s:setPluginOptions()
 	let g:gutentags_ctags_tagfile = ".ctags"
 	let g:gutentags_enabled = 1
 	let g:gutentags_ctags_extra_args = [
-	\	'--regex-pascal=/^\s*(T\w+)\s*=\s*/\1/t,Type/',
+	\	'--regex-pascal=/^\s*([TEI]\w+)\s*=\s*/\1/t,Type/',
+	\	'--regex-pascal=/^\s*property\s+(\w+)[:[]/\1/p,Property/',
 	\]
 
 	" FZF
