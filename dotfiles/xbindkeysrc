@@ -22,3 +22,15 @@
 	m:0x0 + c:107
 	Print
 
+"ovoplayerctrl --playpause"
+	m:0x0 + c:172
+	XF86AudioPlay
+
+"ovoplayerctrl --next"
+	m:0x0 + c:171
+	XF86AudioNext
+
+"ovoplayerctrl --previous"
+	m:0x0 + c:173
+	XF86AudioPrev
+
