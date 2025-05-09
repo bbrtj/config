@@ -1,0 +1,44 @@
+## Installation
+
+- remove installation media after booting a kernel with it. That way setup program will not detect USB EFI as system EFI
+- installation with encryption:
+```
+# based on https://www.tumfatig.net/2023/install-slackware-linux-with-full-disk-ecryption-on-a-uefi-system/
+# create GPT disklabel (g)
+# create EFI partition (64M, type 1)
+# create LVM partition (the rest of the space, type 30)
+fdisk /dev/DISK
+mkfs.vfat /dev/EFI
+
+# set up encryption
+cryptsetup -y luksFormat /dev/LVM
+cryptsetup luksOpen /dev/LMV slackerdisk
+
+# virtual volumes
+vgcreate slacker /dev/mapper/slackerdisk
+lvcreate -L 16G -n swap slacker
+lvcreate -L 84G -n root slacker
+lvcreate -l 100%FREE -n home slacker
+
+# setup
+mkswap /dev/slacker/swap
+setup
+
+# after setup
+chroot /mnt
+/usr/share/mkinitrd/mkinitrd_command_generator.sh > initrd
+sh initrd
+eliloconfig
+
+# tweaks:
+# ' resume=/dev/slacker/swap' to /boot/efi/EFI/Slackware/elilo.conf ('append')
+# '-h /dev/slacker/swap" -m "uhci-hcd:usbhid"' to initrd script
+```
+- installation media is also the rescue drive. `setup` (usually) mounts everything. Besides disks, `dev`, `sys` and `proc` must be mounted with `mount --rbind` into the `mnt` directory
+
+## configuration
+
+- if the kernel was not blacklisted in slackpkg, new initrd and eliloconf must be generated with installation media, or efi disk must be mounted before installing it
+- software can be taken from source mirrors to build it with different options, `source` directory. If the package was updated, use `patches/source` directory instead
+- `chmod +x` to `/etc/rc.d/` services to enable them
+

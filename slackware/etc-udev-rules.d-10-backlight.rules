@@ -1,0 +1,4 @@
+#ACTION=="add", SUBSYSTEM=="backlight", KERNEL=="intel_backlight", GROUP="video", MODE="0664"
+RUN+="/bin/chgrp video /sys/class/backlight/intel_backlight/brightness"
+RUN+="/bin/chmod g+w /sys/class/backlight/intel_backlight/brightness"
+

@@ -4,9 +4,8 @@ use v5.24;
 use warnings;
 use autodie;
 
-my $command = "xinput";
-my $pointer_master;
-my $touchpad_slave;
+my $command = "synclient";
+my $field = "TouchpadOff";
 my $enabled = 1;
 
 {
@@ -14,30 +13,16 @@ my $enabled = 1;
 
 	while (my $line = <$output>) {
 		chomp $line;
-		my ($id) = $line =~ /id=(\d+)/;
-		if ($line =~ /master pointer/) {
-			say "found master on id $id";
-			$pointer_master = $id;
-		}
-		elsif ($line =~ /touchpad/i) {
-			say "found touchpad on id $id";
-			$touchpad_slave = $id;
-
-			if ($line =~ /floating/) {
-				$enabled = 0;
-			}
+		my ($disabled) = $line =~ /$field\s*=\s*(\d+)/;
+		if (defined $disabled) {
+			$enabled = !$disabled;
+			last;
 		}
 	}
 }
 
-if (defined $pointer_master && defined $touchpad_slave) {
-	if ($enabled) {
-		`$command float $touchpad_slave`;
-    `$command disable $touchpad_slave`;
-	} else {
-		`$command reattach $touchpad_slave $pointer_master`;
-    `$command enable $touchpad_slave`;
-	}
-} else {
-	die "couldn't fetch full data from $command";
-}
+my $value = $enabled ? '1' : '0';
+my $new_command = "$command $field=$value";
+say "executing '$new_command'";
+print `$new_command`;
+
