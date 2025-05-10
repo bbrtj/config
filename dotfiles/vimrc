@@ -16,6 +16,7 @@ function! s:setEditorOptions()
 	filetype indent off
 	set sessionoptions-=options
 	set mouse=a
+	set nostartofline
 endfunction
 
 function! s:setColorSchemeOptions()

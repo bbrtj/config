@@ -11,14 +11,15 @@ xset r 66
 # disable screen blacking
 xset s off -dpms
 
-# mouse acceleration
-xinput --set-prop 9 'libinput Accel Speed' 0.2
-
 feh --bg-scale $WALLPAPER
 xcompmgr &
 
 pkill -u $USER -f ^perl.*pstatus
 pstatus &
+
+if [ -f "$HOME/.Xresources" ]; then
+	xrdb "$HOME/.Xresources"
+fi
 
 exec startdwm
 
