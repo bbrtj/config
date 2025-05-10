@@ -33,6 +33,7 @@ function! s:setDisplayOptions()
 	set listchars=tab:»\ ,trail:‼,nbsp:◦
 	set list
 	set sidescrolloff=5
+	set scrolloff=0
 	set wrap
 	set nohlsearch
 	set wildmenu
