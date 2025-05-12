@@ -58,6 +58,7 @@ function! s:setSearchingOptions()
 	set smartcase
 	set incsearch
 	set complete-=i
+	set shortmess-=S " number of matches on the status bar
 endfunction
 
 "------------
