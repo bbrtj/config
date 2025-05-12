@@ -1,0 +1,63 @@
+#!/usr/bin/perl
+
+use v5.24;
+use warnings;
+use autodie;
+use Getopt::Long;
+use Pod::Usage;
+
+my $help = !!0;
+my $desc = !!0;
+GetOptions(
+	'd|descriptions' => \$desc,
+	'h|help' => \$help,
+) or pod2usage(2);
+
+pod2usage(-exitval => 0, -verbose => 2, -noperldoc => 1) if $help;
+
+my $wanted = shift // die "please provide a package name\n";
+my $prefix = '/var/log/packages/';
+my @matching = grep { /\Q$wanted\E/i } glob "$prefix*";
+
+my $last = 0;
+say "Packages in /var/log/packages for '$wanted':";
+foreach my $match (@matching) {
+	my $hr_name = $match =~ s/^$prefix//r;
+	say ++$last . ". $hr_name";
+
+	if ($desc) {
+		open my $fh, '<', $match;
+		my @lines = grep { /PACKAGE DESCRIPTION/ ... /FILE LIST/ } readline $fh;
+		my $prefix = ' ' x (length("$last") + 2);
+		say map { "$prefix$_" } @lines[1 .. @lines - 2];
+	}
+}
+
+__END__
+
+=head1 NAME
+
+pkgsearch - Search slackware packages
+
+=head1 SYNOPSIS
+
+pkgsearch [options] NAME
+
+ Options:
+   -d, --descriptions            fetch package descriptions
+
+=head1 OPTIONS
+
+=over
+
+=item B<-d>, B<--descriptions>
+
+Print descriptions for each package
+
+=back
+
+=head1 DESCRIPTION
+
+This program searches C</var/log/packages> and provides information about
+installed Slackware packages matching name C<NAME>.
+
