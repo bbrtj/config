@@ -41,4 +41,5 @@ eliloconfig
 - if the kernel was not blacklisted in slackpkg, new initrd and eliloconf must be generated with installation media, or efi disk must be mounted before installing it
 - software can be taken from source mirrors to build it with different options, `source` directory. If the package was updated, use `patches/source` directory instead
 - `chmod +x` to `/etc/rc.d/` services to enable them
+- `cat /proc/acpi/wakeup`, `echo 'PNP0C0D:00' | sudo tee /sys/bus/acpi/drivers/button/unbind`
 

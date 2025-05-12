@@ -26,9 +26,15 @@ wget https://github.com/sbopkg/sbopkg/releases/download/0.38.3/sbopkg-0.38.3-noa
 sudo installpkg sbopkg-0.38.3-noarch-1_wsr.tgz
 rm sbopkg-0.38.3-noarch-1_wsr.tgz
 sudo sbopkg -r
-sudo sqg -p "feh xbindkeys dmenu slock flatpak borgbackup libqtpas rar unrar" -o initial
+sudo sqg -p "feh xbindkeys slock flatpak borgbackup libqtpas rar unrar docker" -o initial
 sudo sbopkg -i initial
 
 # configure flatpak
 sudo flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+
+# games play without permission issues
+sudo chgrp -R users /var/lib/bsdgames
+sudo chmod -R g+w /var/lib/bsdgames
+
+cp local_config.example.sh local_config.sh
 
