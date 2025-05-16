@@ -14,8 +14,8 @@ xset s off -dpms
 feh --bg-scale $WALLPAPER
 xcompmgr &
 
-pkill -u $USER -f ^perl.*pstatus
-pstatus &
+pkill -u $USER -f pcrd
+pcrctl run daemon
 
 if [ -f "$HOME/.Xresources" ]; then
 	xrdb "$HOME/.Xresources"
