@@ -4,11 +4,9 @@ KBSTATE=$(cat ~/.kblayout)
 
 if [ "$KBSTATE" = "qwerty" ]; then
 	setxkbmap -layout pl
-	# echo ru > ~/.kblayout
-# elif [ "$KBSTATE" = "ru" ]; then
-	# setxkbmap -layout ru
 	echo dvorak > ~/.kblayout
 else
 	setxkbmap -layout pl -variant dvp -option caps:backspace,shift:both_capslock
 	echo qwerty > ~/.kblayout
 fi
+

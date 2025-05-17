@@ -18,7 +18,7 @@ if (!$arg) {
 	say for @list;
 }
 elsif ($arg eq 'list') {
-	system("list " . DATA_DIR);
+	system("ls -lt " . DATA_DIR);
 }
 elsif ($arg) {
 	my $name = DATA_DIR . "/$arg.md";

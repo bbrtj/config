@@ -7,15 +7,21 @@ die "please configure MON_CONFIG envvar"
 	unless exists $ENV{MON_CONFIG};
 
 my @config = split /;/, $ENV{MON_CONFIG};
-my ($output, $base_output, $position) = @config;
+my ($outputs, $base_output, $position) = @config;
+my @outputs = split /,/, $outputs;
 
 my @cleanup = (
-	$ENV{HOME} . '/.fehbg',
+	'fehbg',
 );
 
 my $arg = shift // "I";
+$arg =~ s{(\d+)}{};
+my $output = $outputs[$1 // 0];
+die "No such output index $1"
+	unless defined $output;
+
 $position = shift // $position;
-`xrandr`; # for some reason empty randr needs to be run
+`xrandr`; # for some reason empty randr needs to be run first
 
 for my $flag (split //, $arg) {
 	if ($flag eq "I") {

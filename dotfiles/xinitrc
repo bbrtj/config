@@ -1,25 +1,32 @@
 #!/usr/bin/env sh
 
-. ~/config/local_config.sh
+# while loop allows to restart dwm without killing all windows
+while true; do
+	. ~/config/local_config.sh
 
-xbindkeys
-echo dvorak > ~/.kblayout
-kbtgl
-# caps lock repat
-xset r 66
+	# layout
+	echo dvorak > ~/.kblayout
+	kbtgl
 
-# disable screen blacking
-xset s off -dpms
+	# caps lock repat
+	xset r 66
 
-feh --bg-scale $WALLPAPER
-xcompmgr &
+	# disable screen blacking
+	xset s off -dpms
 
-pkill -u $USER -f pcrd
-pcrctl run daemon
+	pkill xbindkeys
+	xbindkeys
 
-if [ -f "$HOME/.Xresources" ]; then
-	xrdb "$HOME/.Xresources"
-fi
+	fehbg
+	xcompmgr &
 
-exec startdwm
+	pkill -u $USER -f pcrd
+	pcrctl run daemon
+
+	if [ -f "$HOME/.Xresources" ]; then
+		xrdb "$HOME/.Xresources"
+	fi
+
+	dwm
+done
 
