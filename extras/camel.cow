@@ -1,3 +1,4 @@
+# this goes into /usr/share/cowsay/cows/camel.cow
 $the_cow = <<"EOC";
         $thoughts   ,__,    ___
          $thoughts  ($eyes)\\__/   \\__
@@ -6,3 +7,4 @@ $the_cow = <<"EOC";
                  //|   \\\\|^
                 //||   ||\\\\
 EOC
+
