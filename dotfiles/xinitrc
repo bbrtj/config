@@ -1,5 +1,8 @@
 #!/usr/bin/env sh
 
+# remove old serverauth files (except this one)
+find ~ -maxdepth 1 | grep /.serverauth.* | grep -v $$ | perl -ne 'chomp and unlink'
+
 # while loop allows to restart dwm without killing all windows
 while true; do
 	. ~/config/local_config.sh
