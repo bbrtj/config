@@ -35,20 +35,6 @@ sub set_dwm_line
 	system('xsetroot', '-name', $text);
 }
 
-sub check_build_default_line
-{
-	my ($self, $feature) = @_;
-
-	return $self->check_dependency('Power.capacity')
-		// $self->check_dependency('Power.life')
-		// $self->check_dependency('Power.charging')
-		// $self->check_dependency('Performance.memory')
-		// $self->check_dependency('Performance.swap')
-		// $self->check_dependency('Performance.cpu')
-		// $self->check_dependency('Sound.volume')
-		// undef;
-}
-
 sub battery_status
 {
 	my ($self, $feature) = @_;
@@ -162,23 +148,53 @@ sub uptime_status
 	return _colsym(COLOR_SELECTED . $uptime_symbol, $uptime);
 }
 
-sub set_build_default_line
+sub check_lock_screen
 {
-	my ($self, $feature, $value) = @_;
+	my ($self, $feature) = @_;
 
-	return 0 if $value eq 'auto' && time < $self->{next_build};
+	my $ex = PCRD::Util::try {
+		PCRD::Util::slurp_command($feature->{config}{command}, '-v');
+	};
 
-	my @status_line = (
-		$self->battery_status($feature),
-		$self->sound_status($feature),
-		$self->memory_status($feature),
-		$self->cpu_status($feature),
+	return ['command', $ex] unless !$ex;
+	return undef;
+}
+
+sub init_lock_screen
+{
+	my ($self, $feature) = @_;
+
+	# after suspend, system clock will jump forward and $last_timestamp will be
+	# far in the past - so the screen is locked very briefly after resume
+	my $last_timestamp = time;
+	my $timer = IO::Async::Timer::Periodic->new(
+		interval => 60,
+		reschedule => 'skip',
+		on_tick => sub {
+			if (time - $last_timestamp > 60 * 15) {
+				PCRD::Util::slurp_command($feature->{config}{command});
+			}
+
+			$last_timestamp = time;
+		},
 	);
 
-	$self->{next_build} = time + $feature->{config}{interval};
-	$self->set_dwm_line(@status_line);
+	$timer->start;
+	$self->{pcrd}{loop}->add($timer);
+}
 
-	return 1;
+sub check_build_default_line
+{
+	my ($self, $feature) = @_;
+
+	return $self->check_dependency('Power.capacity')
+		// $self->check_dependency('Power.life')
+		// $self->check_dependency('Power.charging')
+		// $self->check_dependency('Performance.memory')
+		// $self->check_dependency('Performance.swap')
+		// $self->check_dependency('Performance.cpu')
+		// $self->check_dependency('Sound.volume')
+		// undef;
 }
 
 sub init_build_default_line
@@ -202,15 +218,34 @@ sub init_build_default_line
 		},
 	);
 
+	$timer->start;
+	$self->{pcrd}{loop}->add($timer);
+
 	$feature->{vars}{volume}->{execute_hook} = sub {
 		my ($action, $value) = @_;
 		if ($action eq 'w') {
 			$feature->execute('w', 'volume changed');
 		}
 	};
+}
 
-	$timer->start;
-	$self->{pcrd}{loop}->add($timer);
+sub set_build_default_line
+{
+	my ($self, $feature, $value) = @_;
+
+	return 0 if $value eq 'auto' && time < $self->{next_build};
+
+	my @status_line = (
+		$self->battery_status($feature),
+		$self->sound_status($feature),
+		$self->memory_status($feature),
+		$self->cpu_status($feature),
+	);
+
+	$self->{next_build} = time + $feature->{config}{interval};
+	$self->set_dwm_line(@status_line);
+
+	return 1;
 }
 
 sub check_build_time_line
@@ -252,6 +287,16 @@ sub set_build_time_line
 sub _build_features
 {
 	return {
+		lock_screen => {
+			desc => 'locks screen after long suspend',
+			mode => 'i',
+			config => {
+				command => {
+					desc => 'command to lock screen',
+					value => 'slock',
+				},
+			},
+		},
 		build_default_line => {
 			desc => 'builds the default line',
 			mode => 'iw',
