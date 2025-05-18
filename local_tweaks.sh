@@ -1,6 +1,6 @@
 synclient FingerHigh=40
-synclient MaxTapTime=100
-synclient MaxTapMove=150
+synclient MaxTapTime=250
+synclient MaxTapMove=100
 synclient MaxSpeed=2
 synclient TapButton2=0
 synclient TapButton3=2
