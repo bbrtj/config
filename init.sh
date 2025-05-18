@@ -26,7 +26,7 @@ wget https://github.com/sbopkg/sbopkg/releases/download/0.38.3/sbopkg-0.38.3-noa
 sudo installpkg sbopkg-0.38.3-noarch-1_wsr.tgz
 rm sbopkg-0.38.3-noarch-1_wsr.tgz
 sudo sbopkg -r
-sudo sqg -p "feh xbindkeys slock flatpak borgbackup libqtpas rar unrar docker" -o initial
+sudo sqg -p "feh xbindkeys slock flatpak borgbackup libqtpas rar unrar xsel docker" -o initial
 sudo sbopkg -i initial
 
 # configure flatpak
