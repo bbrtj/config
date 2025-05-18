@@ -5,7 +5,7 @@
 ```
 # based on https://www.tumfatig.net/2023/install-slackware-linux-with-full-disk-ecryption-on-a-uefi-system/
 # create GPT disklabel (g)
-# create EFI partition (64M, type 1)
+# create EFI partition (64M absolute minimum, type 1)
 # create LVM partition (the rest of the space, type 30)
 fdisk /dev/DISK
 mkfs.vfat /dev/EFI
