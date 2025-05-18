@@ -15,3 +15,6 @@ Performance.cpu_auto_scaling.enabled=0
 Status.enabled=1
 Status.plugin=~/config/system-independent/lib/status.pcrd.pm
 
+Auto.enabled=1
+Auto.plugin=~/config/system-independent/lib/auto.pcrd.pm
+
