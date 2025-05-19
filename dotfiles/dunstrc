@@ -1,0 +1,67 @@
+[global]
+
+follow=keyboard
+notification_limit=6
+
+frame_width=2
+padding=10
+gap_size=6
+offset=(25,25)
+line_height=3
+
+show_indicators=false
+mouse_left_click=do_action,close_current
+mouse_right_click=close_current
+
+min_icon_size=48
+max_icon_size=48
+icon_position=right
+
+font=DejaVu Sans 9
+transparency=8
+background="#1d2021"
+foreground="#fbf1c7"
+
+[ovoplayer-urgency]
+	appname="OvoPlayer"
+	urgency=low
+
+[low-urgency]
+	msg_urgency=low
+	frame_color="#83a598"
+	timeout=4
+	new_icon=~/config/system-independent/extras/i_blue.png
+
+[normal-urgency]
+	msg_urgency=normal
+	frame_color="#b8bb26"
+	timeout=10
+	new_icon=~/config/system-independent/extras/q_green.png
+
+[critical-urgency]
+	msg_urgency=critical
+	frame_color="#fb4934"
+	timeout=20
+	new_icon=~/config/system-independent/extras/e_red.png
+
+[ovoplayer]
+	appname="OvoPlayer"
+	format=<b>Now playing: </b>%s
+	history_ignore=true
+
+[pcrd]
+	appname="pcrd"
+	history_ignore=true
+
+[pcrd-low]
+	appname="pcrd"
+	msg_urgency="low"
+	new_icon=~/config/system-independent/extras/q_blue.png
+
+[pcrd-critical]
+	appname="pcrd"
+	msg_urgency="critical"
+	new_icon=~/config/system-independent/extras/q_red.png
+
+# vi: ft=cfg
+

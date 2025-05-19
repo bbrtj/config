@@ -9,13 +9,13 @@ use Util;
 use Env qw(HOME);
 
 if (-e "$HOME/config/backup") {
-	print 'Backup directory exists! Really continue? (Y/n)';
+	print 'Backup directory exists! Really continue? (Y/n) ';
 	my $decision = readline STDIN;
 	chomp $decision;
 	die 'Aborted' unless $decision eq 'Y';
 }
 
-foreach my $dir ("$HOME/config/backup", "$HOME/.config", "$HOME/.config/nvim") {
+foreach my $dir ("$HOME/config/backup", "$HOME/.config", "$HOME/.config/nvim", "$HOME/.config/dunst") {
 	if (-e $dir && !-d $dir) {
 		die "$dir is not a directory!";
 	}
@@ -25,6 +25,7 @@ foreach my $dir ("$HOME/config/backup", "$HOME/.config", "$HOME/.config/nvim") {
 
 my @filelist = (
 	['neovim', "$HOME/.config/nvim/init.nvim"],
+	['dunstrc', "$HOME/.config/dunst/dunstrc"],
 	['bashrc', "$HOME/.bashrc"],
 	['vimrc', "$HOME/.vimrc"],
 	['tmux.conf', "$HOME/.tmux.conf"],

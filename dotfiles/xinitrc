@@ -17,11 +17,14 @@ while true; do
 	# disable screen blacking
 	xset s off -dpms
 
+	fehbg
+	xcompmgr &
+
 	pkill xbindkeys
 	xbindkeys
 
-	fehbg
-	xcompmgr &
+	pkill dunst
+	dunst &
 
 	pkill -u $USER -f pcrd
 	pcrctl run daemon
