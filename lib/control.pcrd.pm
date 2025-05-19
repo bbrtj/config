@@ -13,10 +13,20 @@ use constant DUNST_ID => 92137;
 
 sub _dunstify
 {
-	my ($self, $title, $content, $error) = @_;
+	my ($self, $title, $content, %args) = @_;
 
 	PCRD::Util::slurp_command(
 		'dunstify',
+		$title, $content,
+		%args
+	);
+}
+
+sub _dunstify_pcrd
+{
+	my ($self, $title, $content, $error) = @_;
+
+	$self->_dunstify(
 		$title, $content,
 		'-a', DUNST_APP,
 		'-r', DUNST_ID,
@@ -24,20 +34,52 @@ sub _dunstify
 	);
 }
 
-sub _dunstify_conf
+sub _dunstify_pcrd_conf
 {
 	my ($self, $conf, $error) = @_;
 	return unless defined $conf && length $conf;
 
 	my ($title, $content) = split /,/, $conf;
-	return $self->_dunstify($title, $content, $error);
+	return $self->_dunstify_pcrd($title, $content, $error);
+}
+
+sub check_low_power
+{
+	my ($self, $feature) = @_;
+
+	return $self->check_dependency('Power.capacity')
+		// undef;
+}
+
+sub init_low_power
+{
+	my ($self, $feature) = @_;
+
+	$feature->{vars}{last_battery} = 100;
+	$feature->{vars}{notified} = 0;
+	$self->{pcrd}->module('Power')->feature('capacity')->{execute_hook} = sub {
+		my ($action, $value, $result) = @_;
+
+		my $old = $feature->{vars}{last_battery};
+		if ($result != $old) {
+			$feature->{vars}{last_battery} = $result;
+
+			if (!$feature->{vars}{notified} && $result <= $feature->{config}{capacity}) {
+				$self->_dunstify('Low power', "Battery at $result%", '-u', 'critical');
+				$feature->{vars}{notified} = 1;
+			}
+			elsif ($result > $feature->{config}{capacity}) {
+				$feature->{vars}{notified} = 0;
+			}
+		}
+	};
 }
 
 sub init_startup
 {
 	my ($self, $feature) = @_;
 
-	$self->_dunstify_conf($feature->{config}{notification});
+	$self->_dunstify_pcrd_conf($feature->{config}{notification});
 }
 
 sub prepare_gestures
@@ -65,7 +107,7 @@ sub prepare_gestures
 			my $title = shift @args;
 			$code = sub {
 				my $content = PCRD::Util::slurp_command(@args);
-				$self->_dunstify($title, $content);
+				$self->_dunstify_pcrd($title, $content);
 			};
 		}
 
@@ -85,7 +127,7 @@ sub set_gestures
 	}
 	elsif ($feature->{config}{notify}) {
 		my $readable_gesture = join ' -> ', split //, uc $gesture;
-		$self->_dunstify('Unknown gesture', $readable_gesture);
+		$self->_dunstify_pcrd('Unknown gesture', $readable_gesture);
 	}
 
 	return 1;
@@ -138,6 +180,16 @@ sub _build_features
 					value => 'PCRD,Loaded',
 				},
 			},
+		},
+		low_power => {
+			desc => 'show notification at low power',
+			mode => 'i',
+			config => {
+				capacity => {
+					desc => 'level of capacity at which to show notification',
+					value => 15,
+				},
+			}
 		},
 		gestures => {
 			desc => 'perform a gesture action',
