@@ -15,6 +15,10 @@ Performance.cpu_auto_scaling.enabled=0
 Status.enabled=1
 Status.plugin=~/config/system-independent/lib/status.pcrd.pm
 
-Auto.enabled=1
-Auto.plugin=~/config/system-independent/lib/auto.pcrd.pm
+Control.enabled=1
+Control.plugin=~/config/system-independent/lib/control.pcrd.pm
+Control.gestures.action.u=command,ovoplayerctrl,--playpause
+Control.gestures.action.ur=command,ovoplayerctrl,--next
+Control.gestures.action.ul=command,ovoplayerctrl,--previous
+Control.gestures.action.r=feature,Status,build_time_line,1
 
