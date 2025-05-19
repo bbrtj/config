@@ -124,6 +124,13 @@ sub prepare_gestures
 				$self->_dunstify($title, join '', @content);
 			};
 		}
+		elsif ($type eq 'info') {
+			my $title = shift @args;
+			$code = sub {
+				my @content = PCRD::Util::slurp_command(@args);
+				$self->_dunstify_pcrd($title, join '', @content);
+			};
+		}
 
 		die "unknown type '$type' for gesture '$action'"
 			unless $code;
