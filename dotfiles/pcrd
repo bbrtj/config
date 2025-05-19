@@ -20,5 +20,7 @@ Control.plugin=~/config/system-independent/lib/control.pcrd.pm
 Control.gestures.action.u=command,ovoplayerctrl,--playpause
 Control.gestures.action.ur=command,ovoplayerctrl,--next
 Control.gestures.action.ul=command,ovoplayerctrl,--previous
-Control.gestures.action.r=feature,Status,build_time_line,1
+Control.gestures.action.r=notification,Current date,date
+Control.gestures.action.ru=command,dunstctl,history-pop
+Control.gestures.action.rd=command,dunstctl close-all && dunstctl history-clear
 

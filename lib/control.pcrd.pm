@@ -43,20 +43,22 @@ sub _dunstify_pcrd_conf
 	return $self->_dunstify_pcrd($title, $content, $error);
 }
 
-sub check_low_power
+sub check_power
 {
 	my ($self, $feature) = @_;
 
 	return $self->check_dependency('Power.capacity')
+		// $self->check_dependency('Power.charging')
 		// undef;
 }
 
-sub init_low_power
+sub init_power
 {
 	my ($self, $feature) = @_;
 
 	$feature->{vars}{last_battery} = 100;
 	$feature->{vars}{notified} = 0;
+	$feature->{vars}{last_charging} = 0;
 	$self->{pcrd}->module('Power')->feature('capacity')->{execute_hook} = sub {
 		my ($action, $value, $result) = @_;
 
@@ -71,6 +73,18 @@ sub init_low_power
 			elsif ($result > $feature->{config}{capacity}) {
 				$feature->{vars}{notified} = 0;
 			}
+		}
+	};
+
+	$self->{pcrd}->module('Power')->feature('charging')->{execute_hook} = sub {
+		my ($action, $value, $result) = @_;
+
+		my $old = $feature->{vars}{last_charging};
+		if ($result != $old) {
+			$feature->{vars}{last_charging} = $result;
+
+			my $text = $result ? 'charging' : 'discharging';
+			$self->_dunstify(ucfirst $text, "Device is now $text", '-u', 'low');
 		}
 	};
 }
@@ -106,8 +120,8 @@ sub prepare_gestures
 		elsif ($type eq 'notification') {
 			my $title = shift @args;
 			$code = sub {
-				my $content = PCRD::Util::slurp_command(@args);
-				$self->_dunstify_pcrd($title, $content);
+				my @content = PCRD::Util::slurp_command(@args);
+				$self->_dunstify($title, join '', @content);
 			};
 		}
 
@@ -181,8 +195,8 @@ sub _build_features
 				},
 			},
 		},
-		low_power => {
-			desc => 'show notification at low power',
+		power => {
+			desc => 'show notification about power',
 			mode => 'i',
 			config => {
 				capacity => {
