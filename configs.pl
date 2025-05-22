@@ -10,7 +10,10 @@ foreach my $from (sort @configs) {
 	my $to = $from =~ s{\$\$}{/}gr;
 	$to =~ s{^../configs}{};
 
-	say "copying $from to $to...";
+	my $mode = (stat $from)[2] & 0777;
+
+	say sprintf "copying %s to %s (mode %04o)...", $from, $to, $mode;
 	copy($from, $to) or die "Could not copy, need to be root?";
+	chmod $mode, $to or die "Could not chmod";
 }
 
