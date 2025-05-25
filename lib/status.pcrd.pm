@@ -41,9 +41,9 @@ sub battery_status
 
 	state $battery_levels = ['', '', '', '', ''];
 	state $colors = [COLOR_URGENT, COLOR_ALERT, COLOR_SELECTED, COLOR_SUCCESS, COLOR_SUCCESS];
-	my $battery_life = $feature->{vars}{life}->execute('r');
-	my $battery_capacity = $feature->{vars}{capacity}->execute('r');
-	my $battery_charging = $feature->{vars}{charging}->execute('r');
+	my $battery_life = $feature->vars->{life}->execute('r');
+	my $battery_capacity = $feature->vars->{capacity}->execute('r');
+	my $battery_charging = $feature->vars->{charging}->execute('r');
 	my $battery = '';
 
 	my $index = -1;
@@ -71,15 +71,28 @@ sub sound_status
 
 	state $sound_levels = ['', '', '', ''];
 	state $colors = [COLOR_DIMMED, COLOR_SELECTED, COLOR_SELECTED, COLOR_SELECTED, COLOR_ALERT, COLOR_URGENT];
-	my $volume = $feature->{vars}{volume}->execute('r');
 
-	return undef
-		unless $volume >= 0;
+	my $volume;
+	my $color;
+	my $level;
 
-	$volume *= 100;
-	my $index = int($volume / 25 - 0.01); # minus 0.01 to have 100 as non-alert
-	my $level = $sound_levels->[$index > $#$sound_levels ? $#$sound_levels : $index];
-	my $color = $colors->[$index > $#$colors ? $#$colors : $index];
+	my $mute = $feature->vars->{mute}->execute('r');
+	if ($mute) {
+		$volume = 'mute';
+		$color = COLOR_DIMMED;
+		$level = '';
+	}
+	else {
+		$volume = $feature->vars->{volume}->execute('r');
+
+		return undef
+			unless $volume >= 0;
+
+		$volume *= 100;
+		my $index = int($volume / 25 - 0.01); # minus 0.01 to have 100 as non-alert
+		$level = $sound_levels->[$index > $#$sound_levels ? $#$sound_levels : $index];
+		$color = $colors->[$index > $#$colors ? $#$colors : $index];
+	}
 
 	return _colsym("$color$level", $volume);
 }
@@ -90,8 +103,8 @@ sub memory_status
 
 	state $ram_indicator = '';
 	state $colors = [COLOR_DIMMED, COLOR_SUCCESS, COLOR_SELECTED, COLOR_ALERT, COLOR_URGENT];
-	my $memory = $feature->{vars}{memory}->execute('r');
-	my $swap = $feature->{vars}{swap}->execute('r');
+	my $memory = $feature->vars->{memory}->execute('r');
+	my $swap = $feature->vars->{swap}->execute('r');
 
 	$memory *= 100;
 	$swap *= 100;
@@ -107,7 +120,7 @@ sub cpu_status
 
 	state $cpu_indicator = '';
 	state $colors = [COLOR_DIMMED, COLOR_SUCCESS, COLOR_SELECTED, COLOR_ALERT, COLOR_URGENT];
-	my $cpu = $feature->{vars}{cpu}->execute('r');
+	my $cpu = $feature->vars->{cpu}->execute('r');
 
 	return undef unless $cpu >= 0;
 
@@ -123,7 +136,7 @@ sub time_status
 	my ($self, $feature) = @_;
 
 	state $time_symbol = '';
-	my $time = $feature->{vars}{time}->execute('r');
+	my $time = $feature->vars->{time}->execute('r');
 
 	return _colsym(COLOR_SELECTED . $time_symbol, $time);
 }
@@ -133,7 +146,7 @@ sub date_status
 	my ($self, $feature) = @_;
 
 	state $date_symbol = '';
-	my $date = $feature->{vars}{date}->execute('r');
+	my $date = $feature->vars->{date}->execute('r');
 
 	return _colsym(COLOR_SELECTED . $date_symbol, $date);
 }
@@ -143,7 +156,7 @@ sub uptime_status
 	my ($self, $feature) = @_;
 
 	state $uptime_symbol = '';
-	my $uptime = $feature->{vars}{uptime}->execute('r');
+	my $uptime = $feature->vars->{uptime}->execute('r');
 
 	return _colsym(COLOR_SELECTED . $uptime_symbol, $uptime);
 }
@@ -159,6 +172,7 @@ sub check_build_default_line
 		// $self->check_dependency('Performance.swap')
 		// $self->check_dependency('Performance.cpu')
 		// $self->check_dependency('Sound.volume')
+		// $self->check_dependency('Sound.mute')
 		// undef;
 }
 
@@ -166,13 +180,14 @@ sub init_build_default_line
 {
 	my ($self, $feature) = @_;
 
-	$feature->{vars}{capacity} = $self->{pcrd}->module('Power')->feature('capacity');
-	$feature->{vars}{life} = $self->{pcrd}->module('Power')->feature('life');
-	$feature->{vars}{charging} = $self->{pcrd}->module('Power')->feature('charging');
-	$feature->{vars}{memory} = $self->{pcrd}->module('Performance')->feature('memory');
-	$feature->{vars}{swap} = $self->{pcrd}->module('Performance')->feature('swap');
-	$feature->{vars}{cpu} = $self->{pcrd}->module('Performance')->feature('cpu');
-	$feature->{vars}{volume} = $self->{pcrd}->module('Sound')->feature('volume');
+	$feature->vars->{capacity} = $self->owner->module('Power')->feature('capacity');
+	$feature->vars->{life} = $self->owner->module('Power')->feature('life');
+	$feature->vars->{charging} = $self->owner->module('Power')->feature('charging');
+	$feature->vars->{memory} = $self->owner->module('Performance')->feature('memory');
+	$feature->vars->{swap} = $self->owner->module('Performance')->feature('swap');
+	$feature->vars->{cpu} = $self->owner->module('Performance')->feature('cpu');
+	$feature->vars->{volume} = $self->owner->module('Sound')->feature('volume');
+	$feature->vars->{mute} = $self->owner->module('Sound')->feature('mute');
 	$self->{next_build} = 0;
 
 	my $timer = IO::Async::Timer::Periodic->new(
@@ -184,14 +199,17 @@ sub init_build_default_line
 	);
 
 	$timer->start;
-	$self->{pcrd}{loop}->add($timer);
+	$self->owner->loop->add($timer);
 
-	$feature->{vars}{volume}->{execute_hook} = sub {
+	my $sound_change = sub {
 		my ($action, $value) = @_;
 		if ($action eq 'w') {
-			$feature->execute('w', 'volume changed');
+			$feature->execute('w', 'sound changed');
 		}
 	};
+
+	$feature->vars->{volume}->add_execute_hook($sound_change);
+	$feature->vars->{mute}->add_execute_hook($sound_change);
 }
 
 sub set_build_default_line
@@ -207,7 +225,7 @@ sub set_build_default_line
 		$self->cpu_status($feature),
 	);
 
-	$self->{next_build} = time + $feature->{config}{interval};
+	$self->{next_build} = time + $feature->config->{interval};
 	$self->set_dwm_line(@status_line);
 
 	return 1;
@@ -220,7 +238,6 @@ sub check_build_time_line
 	return $self->check_dependency('System.date')
 		// $self->check_dependency('System.time')
 		// $self->check_dependency('System.uptime')
-		// $self->check_dependency('Performance.storage')
 		// undef;
 }
 
@@ -228,9 +245,9 @@ sub init_build_time_line
 {
 	my ($self, $feature) = @_;
 
-	$feature->{vars}{time} = $self->{pcrd}->module('System')->feature('time');
-	$feature->{vars}{date} = $self->{pcrd}->module('System')->feature('date');
-	$feature->{vars}{uptime} = $self->{pcrd}->module('System')->feature('uptime');
+	$feature->vars->{time} = $self->owner->module('System')->feature('time');
+	$feature->vars->{date} = $self->owner->module('System')->feature('date');
+	$feature->vars->{uptime} = $self->owner->module('System')->feature('uptime');
 }
 
 sub set_build_time_line
@@ -243,7 +260,7 @@ sub set_build_time_line
 		$self->uptime_status($feature),
 	);
 
-	$self->{next_build} = time + $feature->{config}{duration};
+	$self->{next_build} = time + $feature->config->{duration};
 	$self->set_dwm_line(@status_line);
 
 	return 1;

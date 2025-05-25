@@ -56,37 +56,44 @@ sub init_power
 {
 	my ($self, $feature) = @_;
 
-	$feature->{vars}{last_battery} = 100;
-	$feature->{vars}{notified} = 0;
-	$feature->{vars}{last_charging} = 0;
-	$self->{pcrd}->module('Power')->feature('capacity')->{execute_hook} = sub {
-		my ($action, $value, $result) = @_;
+	$feature->vars->{last_battery} = 100;
+	$feature->vars->{notified} = 0;
+	$feature->vars->{last_charging} = 0;
+	$self->owner->module('Power')->feature('capacity')->add_execute_hook(
+		sub {
+			my ($action, $value, $result) = @_;
+			my $vars = $feature->vars;
+			my $config = $feature->config;
 
-		my $old = $feature->{vars}{last_battery};
-		if ($result != $old) {
-			$feature->{vars}{last_battery} = $result;
+			my $old = $vars->{last_battery};
+			if ($result != $old) {
+				$vars->{last_battery} = $result;
 
-			if (!$feature->{vars}{notified} && $result <= $feature->{config}{capacity}) {
-				$self->_dunstify('Low power', "Battery at $result%", '-u', 'critical');
-				$feature->{vars}{notified} = 1;
-			}
-			elsif ($result > $feature->{config}{capacity}) {
-				$feature->{vars}{notified} = 0;
+				if (!$vars->{notified} && $result <= $config->{capacity}) {
+					$self->_dunstify('Low power', "Battery at $result%", '-u', 'critical');
+					$vars->{notified} = 1;
+				}
+				elsif ($result > $config->{capacity}) {
+					$vars->{notified} = 0;
+				}
 			}
 		}
-	};
+	);
 
-	$self->{pcrd}->module('Power')->feature('charging')->{execute_hook} = sub {
-		my ($action, $value, $result) = @_;
+	$self->owner->module('Power')->feature('charging')->add_execute_hook(
+		sub {
+			my ($action, $value, $result) = @_;
+			my $vars = $feature->vars;
 
-		my $old = $feature->{vars}{last_charging};
-		if ($result != $old) {
-			$feature->{vars}{last_charging} = $result;
+			my $old = $vars->{last_charging};
+			if ($result != $old) {
+				$vars->{last_charging} = $result;
 
-			my $text = $result ? 'charging' : 'discharging';
-			$self->_dunstify(ucfirst $text, "Device is now $text", '-u', 'low');
+				my $text = $result ? 'charging' : 'discharging';
+				$self->_dunstify(ucfirst $text, "Device is now $text", '-u', 'low');
+			}
 		}
-	};
+	);
 }
 
 sub init_startup
@@ -100,7 +107,7 @@ sub prepare_gestures
 {
 	my ($self, $feature) = @_;
 
-	my $actions = $feature->{config}{action} // {};
+	my $actions = $feature->config->{action} // {};
 	foreach my $action (keys %{$actions}) {
 		my ($type, @args) = split /,/, $actions->{$action};
 		my $code;
@@ -113,7 +120,7 @@ sub prepare_gestures
 		elsif ($type eq 'feature') {
 			my ($module, $feature, $value) = @args;
 			$code = sub {
-				$self->{pcrd}->module($module)->feature($feature)
+				$self->owner->module($module)->feature($feature)
 					->execute($value ? ('w', $value) : ());
 			};
 		}
@@ -135,7 +142,7 @@ sub prepare_gestures
 		die "unknown type '$type' for gesture '$action'"
 			unless $code;
 
-		$feature->{vars}{actions}{$action} = $code;
+		$feature->vars->{actions}{$action} = $code;
 	}
 }
 
@@ -143,10 +150,11 @@ sub set_gestures
 {
 	my ($self, $feature, $gesture) = @_;
 
-	if ($feature->{vars}{actions}{$gesture}) {
-		$feature->{vars}{actions}{$gesture}->();
+	my $action = $feature->vars->{actions}{$gesture};
+	if ($action) {
+		$action->();
 	}
-	elsif ($feature->{config}{notify}) {
+	elsif ($feature->config->{notify}) {
 		my $readable_gesture = join ' -> ', split //, uc $gesture;
 		$self->_dunstify_pcrd('Unknown gesture', $readable_gesture);
 	}
@@ -159,7 +167,7 @@ sub check_lock_screen
 	my ($self, $feature) = @_;
 
 	my $ex = PCRD::Util::try {
-		PCRD::Util::slurp_command($feature->{config}{command}, '-v');
+		PCRD::Util::slurp_command($feature->config->{command}, '-v');
 	};
 
 	return ['command', $ex] unless !$ex;
@@ -177,8 +185,8 @@ sub init_lock_screen
 		interval => 60,
 		reschedule => 'skip',
 		on_tick => sub {
-			if (time - $last_timestamp > 60 * $feature->{config}{timeout}) {
-				PCRD::Util::slurp_command($feature->{config}{command});
+			if (time - $last_timestamp > 60 * $feature->config->{timeout}) {
+				PCRD::Util::slurp_command($feature->config->{command});
 			}
 
 			$last_timestamp = time;
@@ -186,7 +194,7 @@ sub init_lock_screen
 	);
 
 	$timer->start;
-	$self->{pcrd}{loop}->add($timer);
+	$self->owner->loop->add($timer);
 }
 
 sub _build_features
