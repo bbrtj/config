@@ -197,6 +197,34 @@ sub init_lock_screen
 	$self->owner->loop->add($timer);
 }
 
+sub check_auto_suspend
+{
+	my ($self, $feature) = @_;
+
+	return $self->check_dependency('Power.suspend')
+		// $self->check_dependency('Device.lid')
+		// undef;
+}
+
+sub init_auto_suspend
+{
+	my ($self, $feature) = @_;
+
+	$feature->vars->{suspend} = $self->owner->module('Power')->feature('suspend');
+	$feature->vars->{lid} = $self->owner->module('Device')->feature('lid');
+}
+
+sub set_auto_suspend
+{
+	my ($self, $feature, $value) = @_;
+
+	my $lid_state = $feature->vars->{lid}->execute('r');
+	return 0 if $lid_state;
+
+	$feature->vars->{suspend}->execute('w', 1);
+	return 1;
+}
+
 sub _build_features
 {
 	return {
@@ -247,6 +275,10 @@ sub _build_features
 					value => 5,
 				},
 			},
+		},
+		auto_suspend => {
+			desc => 'suspends the device on lid close',
+			mode => 'iw',
 		},
 	};
 }
