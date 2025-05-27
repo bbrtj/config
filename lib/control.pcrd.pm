@@ -212,12 +212,26 @@ sub init_auto_suspend
 
 	$feature->vars->{suspend} = $self->owner->module('Power')->feature('suspend');
 	$feature->vars->{lid} = $self->owner->module('Device')->feature('lid');
+	$feature->vars->{active} = !!1;
+}
+
+sub get_auto_suspend
+{
+	my ($self, $feature) = @_;
+
+	return $feature->vars->{active};
 }
 
 sub set_auto_suspend
 {
 	my ($self, $feature, $value) = @_;
 
+	if ($value eq 'on' || $value eq 'off') {
+		$feature->vars->{active} = $value eq 'on';
+		return 1;
+	}
+
+	return 0 unless $feature->vars->{active};
 	my $lid_state = $feature->vars->{lid}->execute('r');
 	return 0 if $lid_state;
 
@@ -278,7 +292,7 @@ sub _build_features
 		},
 		auto_suspend => {
 			desc => 'suspends the device on lid close',
-			mode => 'iw',
+			mode => 'irw',
 		},
 	};
 }
