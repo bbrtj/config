@@ -231,6 +231,7 @@ sub set_auto_suspend
 		return 1;
 	}
 
+	return 0 unless $value eq 'execute';
 	return 0 unless $feature->vars->{active};
 	my $lid_state = $feature->vars->{lid}->execute('r');
 	return 0 if $lid_state;
