@@ -9,7 +9,7 @@ case "$1" in
     case "$2" in
       power) /sbin/init 0
          ;;
-      lid) pcrctl query Control auto_suspend 1
+      lid) pcrctl query Control auto_suspend execute
          ;;
       *)
          ;;
