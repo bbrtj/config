@@ -1,2 +1,3 @@
+#!/bin/sh
 /usr/bin/find /tmp -mindepth 1 -maxdepth 1 -exec /bin/rm -rf {} +;
 

@@ -13,4 +13,5 @@
 
 - [ ] disable hardware acceleration?
 - [ ] check cpu frequency (`cpufreq-info`), temperature (`sensors`)
+- [ ] disable elogind
 

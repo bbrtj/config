@@ -1,0 +1,40 @@
+#!/bin/sh
+# Start/stop/restart pcrd.
+# (based on acpid)
+
+# Start pcrd:
+pcrd_start() {
+  if [ -x /usr/local/bin/pcrd ]; then
+    echo "Starting PCRD daemon:  /usr/local/bin/pcrd"
+    /usr/local/bin/pcrd
+  fi
+}
+
+# Stop pcrd:
+pcrd_stop() {
+  if [ -r /var/run/pcrd.pid ]; then
+    kill $(cat /var/run/pcrd.pid)
+  fi
+}
+
+# Restart pcrd:
+pcrd_restart() {
+  pcrd_stop
+  sleep 1
+  pcrd_start
+}
+
+case "$1" in
+'start')
+  pcrd_start
+  ;;
+'stop')
+  pcrd_stop
+  ;;
+'restart')
+  pcrd_restart
+  ;;
+*)
+  echo "usage $0 start|stop|restart"
+esac
+
