@@ -27,7 +27,7 @@ while true; do
 	dunst &
 
 	pkill -u $USER -f pcrd
-	pcrctl run daemon
+	pcrd user-agent &
 
 	if [ -f "$HOME/.Xresources" ]; then
 		xrdb "$HOME/.Xresources"

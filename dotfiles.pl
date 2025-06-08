@@ -34,7 +34,6 @@ my @filelist = (
 	['gitignore', "$HOME/.gitignore"],
 	['perltidyrc', "$HOME/.perltidyrc"],
 	['profile', "$HOME/.profile"],
-	['pcrd', "$HOME/.pcrd"],
 );
 
 foreach my $spec (@filelist) {

@@ -8,69 +8,31 @@ use parent 'PCRD::Module';
 
 use constant name => 'Control';
 
-use constant DUNST_APP => 'pcrd';
-use constant DUNST_ID => 92137;
-
-sub _dunstify
-{
-	my ($self, $title, $content, %args) = @_;
-
-	PCRD::Util::slurp_command(
-		'dunstify',
-		$title, $content,
-		%args
-	);
-}
-
-sub _dunstify_pcrd
-{
-	my ($self, $title, $content, $error) = @_;
-
-	$self->_dunstify(
-		$title, $content,
-		'-a', DUNST_APP,
-		'-r', DUNST_ID,
-		'-u', $error ? 'critical' : 'low'
-	);
-}
-
-sub _dunstify_pcrd_conf
-{
-	my ($self, $conf, $error) = @_;
-	return unless defined $conf && length $conf;
-
-	my ($title, $content) = split /,/, $conf;
-	return $self->_dunstify_pcrd($title, $content, $error);
-}
-
-sub check_power
-{
-	my ($self, $feature) = @_;
-
-	return $self->check_dependency('Power.capacity')
-		// $self->check_dependency('Power.charging')
-		// undef;
-}
-
 sub init_power
 {
-	my ($self, $feature) = @_;
+	my ($self, $feature, $enabled) = @_;
+	my $vars = $feature->vars;
 
-	$feature->vars->{last_battery} = 100;
-	$feature->vars->{notified} = 0;
-	$feature->vars->{last_charging} = 0;
-	$self->owner->module('Power')->feature('capacity')->add_execute_hook(
+	my $initialized = exists $vars->{running};
+	$vars->{running} = $enabled;
+	return if $initialized;
+
+	$vars->{last_battery} = 100;
+	$vars->{notified} = 0;
+	$vars->{last_charging} = 0;
+	$feature->dependencies->{'Power.capacity'}->add_execute_hook(
 		sub {
 			my ($action, $value, $result) = @_;
-			my $vars = $feature->vars;
 			my $config = $feature->config;
+
+			return unless $vars->{running};
 
 			my $old = $vars->{last_battery};
 			if ($result != $old) {
 				$vars->{last_battery} = $result;
 
 				if (!$vars->{notified} && $result <= $config->{capacity}) {
-					$self->_dunstify('Low power', "Battery at $result%", '-u', 'critical');
+					$feature->dependencies->{'Dunst.error'}->execute('w', "Low power,Battery at $result%");
 					$vars->{notified} = 1;
 				}
 				elsif ($result > $config->{capacity}) {
@@ -80,27 +42,22 @@ sub init_power
 		}
 	);
 
-	$self->owner->module('Power')->feature('charging')->add_execute_hook(
+	$feature->dependencies->{'Power.charging'}->add_execute_hook(
 		sub {
 			my ($action, $value, $result) = @_;
-			my $vars = $feature->vars;
+
+			return unless $vars->{running};
 
 			my $old = $vars->{last_charging};
 			if ($result != $old) {
 				$vars->{last_charging} = $result;
 
 				my $text = $result ? 'charging' : 'discharging';
-				$self->_dunstify(ucfirst $text, "Device is now $text", '-u', 'low');
+				my $title = ucfirst $text;
+				$feature->dependencies->{'Dunst.info'}->execute('w', "$title,Device is now $text");
 			}
 		}
 	);
-}
-
-sub init_startup
-{
-	my ($self, $feature) = @_;
-
-	$self->_dunstify_pcrd_conf($feature->{config}{notification});
 }
 
 sub prepare_gestures
@@ -114,28 +71,37 @@ sub prepare_gestures
 
 		if ($type eq 'command') {
 			$code = sub {
-				PCRD::Util::slurp_command(@args);
+				$self->owner->broadcast(@args);
 			};
 		}
 		elsif ($type eq 'feature') {
 			my ($module, $feature, $value) = @args;
 			$code = sub {
 				$self->owner->module($module)->feature($feature)
-					->execute($value ? ('w', $value) : ());
+					->execute($value ? ('w', $value) : ('r'));
 			};
 		}
 		elsif ($type eq 'notification') {
 			my $title = shift @args;
 			$code = sub {
-				my @content = PCRD::Util::slurp_command(@args);
-				$self->_dunstify($title, join '', @content);
+				# TODO: non-pcrd notification
+				$self->owner->broadcast(@args)->on_done(
+					sub {
+						my $content = join '', @_;
+						$feature->dependencies->{'Dunst.info'}->execute('w', "$title,$content");
+					}
+				);
 			};
 		}
 		elsif ($type eq 'info') {
 			my $title = shift @args;
 			$code = sub {
-				my @content = PCRD::Util::slurp_command(@args);
-				$self->_dunstify_pcrd($title, join '', @content);
+				$self->owner->broadcast(@args)->on_done(
+					sub {
+						my $content = join '', @_;
+						$feature->dependencies->{'Dunst.info'}->execute('w', "$title,$content");
+					}
+				);
 			};
 		}
 
@@ -156,7 +122,7 @@ sub set_gestures
 	}
 	elsif ($feature->config->{notify}) {
 		my $readable_gesture = join ' -> ', split //, uc $gesture;
-		$self->_dunstify_pcrd('Unknown gesture', $readable_gesture);
+		$feature->dependencies->{'Dunst.info'}->execute('w', "Unknown gesture,$readable_gesture");
 	}
 
 	return 1;
@@ -166,52 +132,58 @@ sub check_lock_screen
 {
 	my ($self, $feature) = @_;
 
-	my $ex = PCRD::Util::try {
-		PCRD::Util::slurp_command($feature->config->{command}, '-v');
-	};
-
-	return ['command', $ex] unless !$ex;
-	return undef;
+	$self->owner->broadcast($feature->config->{command}, '-v')
+		->then(
+			sub {
+				return undef;
+			},
+			sub {
+				return Future->done(['command', shift]);
+			}
+		);
 }
 
 sub init_lock_screen
 {
-	my ($self, $feature) = @_;
+	my ($self, $feature, $enabled) = @_;
+	my $vars = $feature->vars;
+
+	if ($vars->{timer}) {
+		if ($enabled) {
+			$vars->{last_timestamp} = time;
+			$vars->{timer}->start;
+		}
+		else {
+			$vars->{timer}->stop;
+		}
+
+		return;
+	}
 
 	# after suspend, system clock will jump forward and $last_timestamp will be
 	# far in the past - so the screen is locked very briefly after resume
-	my $last_timestamp = time;
+	$vars->{last_timestamp} = time;
 	my $timer = IO::Async::Timer::Periodic->new(
 		interval => 60,
 		reschedule => 'skip',
 		on_tick => sub {
-			if (time - $last_timestamp > 60 * $feature->config->{timeout}) {
-				PCRD::Util::slurp_command($feature->config->{command});
+			if (time - $vars->{last_timestamp} > 60 * $feature->config->{timeout}) {
+				$self->owner->broadcast($feature->config->{command});
 			}
 
-			$last_timestamp = time;
+			$vars->{last_timestamp} = time;
 		},
 	);
 
 	$timer->start;
-	$self->owner->loop->add($timer);
+	$self->owner->notifier->add_child($timer);
+	$vars->{timer} = $timer;
 }
 
-sub check_auto_suspend
+sub prepare_auto_suspend
 {
 	my ($self, $feature) = @_;
 
-	return $self->check_dependency('Power.suspend')
-		// $self->check_dependency('Device.lid')
-		// undef;
-}
-
-sub init_auto_suspend
-{
-	my ($self, $feature) = @_;
-
-	$feature->vars->{suspend} = $self->owner->module('Power')->feature('suspend');
-	$feature->vars->{lid} = $self->owner->module('Device')->feature('lid');
 	$feature->vars->{active} = !!1;
 }
 
@@ -233,26 +205,22 @@ sub set_auto_suspend
 
 	return 0 unless $value eq 'execute';
 	return 0 unless $feature->vars->{active};
-	my $lid_state = $feature->vars->{lid}->execute('r');
-	return 0 if $lid_state;
 
-	$feature->vars->{suspend}->execute('w', 1);
-	return 1;
+	$feature->dependencies->{'Device.lid'}->execute('r')
+		->then(
+			sub {
+				my $lid_state = shift;
+				return 0 if $lid_state;
+
+				$feature->dependencies->{'Power.suspend'}->execute('w', 1);
+				return 1;
+			}
+		);
 }
 
 sub _build_features
 {
 	return {
-		startup => {
-			desc => 'perform actions on startup',
-			mode => 'i',
-			config => {
-				notification => {
-					desc => 'startup notification',
-					value => 'PCRD,Loaded',
-				},
-			},
-		},
 		power => {
 			desc => 'show notification about power',
 			mode => 'i',
@@ -261,7 +229,14 @@ sub _build_features
 					desc => 'level of capacity at which to show notification',
 					value => 15,
 				},
-			}
+			},
+			dependencies => [
+				'Power.capacity',
+				'Power.charging',
+				'Dunst.info',
+				'Dunst.error',
+			],
+			needs_agent => 1,
 		},
 		gestures => {
 			desc => 'perform a gesture action',
@@ -276,6 +251,10 @@ sub _build_features
 					value => {},
 				},
 			},
+			dependencies => [
+				'Dunst.info',
+			],
+			needs_agent => 1,
 		},
 		lock_screen => {
 			desc => 'locks screen after long suspend',
@@ -290,13 +269,17 @@ sub _build_features
 					value => 5,
 				},
 			},
+			needs_agent => 1,
 		},
 		auto_suspend => {
 			desc => 'suspends the device on lid close',
-			mode => 'irw',
+			mode => 'rw',
+			dependencies => [
+				'Power.suspend',
+				'Device.lid',
+			],
 		},
 	};
 }
-
 1;
 
