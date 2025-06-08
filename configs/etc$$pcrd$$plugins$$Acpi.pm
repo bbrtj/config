@@ -49,7 +49,8 @@ sub set_signal
 		}
 	}
 	elsif ($type eq 'ac_adapter') {
-		return $self->_execute($feature, 'Status.build_default_line', 'w', 'ac');
+		# too soon to call this - machine not yet aware of being charged / discharged
+		# return $self->_execute($feature, 'Status.build_default_line', 'w', 'ac');
 	}
 
 	return 'unimplemented';
