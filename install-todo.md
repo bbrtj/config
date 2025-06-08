@@ -1,4 +1,5 @@
 # Things to do
+- [ ] install PCRD on system perl
 - [ ] move config files from slackware directory to the system
 - [ ] flatpak apps (dbeaver, file-roller, transmission etc) (with `flatpak-install` script)
 - [ ] acpiconf program for battery levels (if available for the laptop model)

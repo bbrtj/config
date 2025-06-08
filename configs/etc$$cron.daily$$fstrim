@@ -1,0 +1,9 @@
+LOG=/var/log/fstrim.log
+DATE=$(date +%m-%d-%Y-%I:%M%p)
+
+if [ ! -e "$LOG" -o "$(find "$LOG" -mtime +7)" ]; then
+	echo "----------$DATE--------" | tee -a $LOG
+	fstrim -a -v | tee -a $LOG
+	echo "------------------------------------" | tee -a $LOG
+fi
+

@@ -36,5 +36,6 @@ sudo flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flat
 sudo chgrp -R users /var/lib/bsdgames
 sudo chmod -R g+w /var/lib/bsdgames
 
+sudo crontab slack_crontab
 cp local_config.example.sh local_config.sh
 
