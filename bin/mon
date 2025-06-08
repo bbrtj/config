@@ -1,49 +1,5 @@
-#!/usr/bin/env perl
+#!/bin/sh
 
-use v5.24;
-use warnings;
-
-die "please configure MON_CONFIG envvar"
-	unless exists $ENV{MON_CONFIG};
-
-my @config = split /;/, $ENV{MON_CONFIG};
-my ($outputs, $base_output, $position) = @config;
-my @outputs = split /,/, $outputs;
-
-my @cleanup = (
-	'fehbg',
-);
-
-my $arg = shift // "I";
-$arg =~ s{(\d+)}{};
-my $output = $outputs[$1 // 0];
-die "No such output index $1"
-	unless defined $output;
-
-$position = shift // $position;
-`xrandr`; # for some reason empty randr needs to be run first
-
-for my $flag (split //, $arg) {
-	if ($flag eq "I") {
-		print `xrandr --output $output --auto --$position-of $base_output`;
-	}
-	elsif ($flag eq "C") {
-		print `xrandr --output $output --auto --same-as $base_output`;
-	}
-	elsif ($flag eq "O") {
-		print `xrandr --output $output --off`;
-		print `xrandr --output $base_output --auto --primary`;
-	}
-	elsif ($flag eq "P") {
-		print `xrandr --output $output --primary`;
-	}
-	elsif ($flag eq "E") {
-		print `xrandr --output $base_output --off`;
-	}
-	else {
-		die "please specify any of: I, O, C, P, E";
-	}
-}
-
-`$_` for (@cleanup);
+pcrctl Display xrandr "$*"
+fehbg
 
