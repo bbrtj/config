@@ -210,7 +210,7 @@ sub init_build_default_line
 		reschedule => 'skip',
 		on_tick => sub {
 			$feature->execute('w', 'auto')
-				if $vars->{running};
+				if $vars->{running} && time > $self->{next_build};
 		},
 	);
 
@@ -232,8 +232,6 @@ sub init_build_default_line
 sub set_build_default_line
 {
 	my ($self, $feature, $value) = @_;
-
-	return 0 if $value eq 'auto' && time < $self->{next_build};
 
 	my @futures = (
 		$self->battery_status($feature),
