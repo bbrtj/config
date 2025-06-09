@@ -33,7 +33,7 @@ sub set_dwm_line
 	my $sep = " $col_sep・ ";
 	my $text = join $sep, grep { defined } @parts;
 
-	system('xsetroot', '-name', $text);
+	$self->owner->broadcast('xsetroot', '-name', $text);
 }
 
 sub battery_status
