@@ -148,36 +148,20 @@ sub init_lock_screen
 	my ($self, $feature, $enabled) = @_;
 	my $vars = $feature->vars;
 
-	if ($vars->{timer}) {
-		if ($enabled) {
-			$vars->{last_timestamp} = time;
-			$vars->{timer}->start;
-		}
-		else {
-			$vars->{timer}->stop;
-		}
+	my $initialized = exists $vars->{running};
+	$vars->{running} = $enabled;
+	return if $initialized;
 
-		return;
-	}
+	$feature->dependencies->{'Power.suspend'}->add_execute_hook(
+		sub {
+			my ($action, $value, $result) = @_;
+			return unless $vars->{running};
 
-	# after suspend, system clock will jump forward and $last_timestamp will be
-	# far in the past - so the screen is locked very briefly after resume
-	$vars->{last_timestamp} = time;
-	my $timer = IO::Async::Timer::Periodic->new(
-		interval => 60,
-		reschedule => 'skip',
-		on_tick => sub {
-			if (time - $vars->{last_timestamp} > 60 * $feature->config->{timeout}) {
+			if ($action eq 'w') {
 				$self->owner->broadcast($feature->config->{command});
 			}
-
-			$vars->{last_timestamp} = time;
-		},
+		}
 	);
-
-	$timer->start;
-	$self->owner->notifier->add_child($timer);
-	$vars->{timer} = $timer;
 }
 
 sub prepare_auto_suspend
@@ -264,12 +248,11 @@ sub _build_features
 					desc => 'command to lock screen',
 					value => 'slock',
 				},
-				timeout => {
-					desc => 'suspend time until lock happens (minutes)',
-					value => 5,
-				},
 			},
 			needs_agent => 1,
+			dependencies => [
+				'Power.suspend',
+			],
 		},
 		auto_suspend => {
 			desc => 'suspends the device on lid close',
