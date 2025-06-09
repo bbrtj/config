@@ -1,4 +1,4 @@
 flatpak install flathub $1 && \
-echo "flatpak run $1" > "$HOME/bin/$2" && \
-chmod u+x "$HOME/bin/$2"
+echo "flatpak run $1" > "$HOME/.local/bin/$2" && \
+chmod u+x "$HOME/.local/bin/$2"
 

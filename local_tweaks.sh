@@ -12,5 +12,5 @@ synclient AreaLeftEdge=200
 synclient AreaRightEdge=$(($(synclient | perl -ne 'print m{\bRightEdge\s+=\s+(\d+)}')-200))
 synclient AreaTopEdge=100
 
-export DMENU_PATH="$HOME/bin:/usr/local/bin:/usr/bin"
+export DMENU_PATH="$HOME/.local/bin:/usr/local/bin:/usr/bin"
 
