@@ -18,10 +18,6 @@
 #	m:0x0 + c:121
 #	XF86AudioMute
 
-"touchpadtgl"
-	m:0x50 + c:61
-	Super_L + z
-
 "slock"
 	m:0x50 + c:47
 	Super_L + s
