@@ -39,6 +39,13 @@ sub set_signal
 		elsif ($subtype eq 'mute') {
 			return $self->_execute($feature, 'Sound.mute', 'w', 'toggle');
 		}
+		elsif ($subtype eq 'power') {
+			return $self->_execute($feature, 'Device.poweroff', 'w', '1');
+		}
+		elsif ($subtype eq 'f20') {
+			# "no microphone" button
+			return $self->_execute($feature, 'Sound.mute_microphone', 'w', 'toggle');
+		}
 	}
 	elsif ($type eq 'video') {
 		if ($subtype eq 'brightnessup') {
@@ -70,8 +77,10 @@ sub _build_features
 				'Status.build_default_line',
 				'Sound.volume',
 				'Sound.mute',
+				'Sound.mute_microphone',
 				'Display.brightness',
 				'Display.xrandr',
+				'Device.poweroff',
 			],
 		},
 	};
