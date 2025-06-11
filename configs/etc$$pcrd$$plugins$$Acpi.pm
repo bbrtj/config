@@ -4,6 +4,9 @@ use v5.14;
 use warnings;
 use utf8;
 
+use IO::Async::Timer::Countdown;
+use Future;
+
 use parent 'PCRD::Module';
 
 use constant name => 'Acpi';
@@ -60,7 +63,16 @@ sub set_signal
 	}
 	elsif ($type eq 'ac_adapter') {
 		# too soon to call this - machine not yet aware of being charged / discharged
-		# return $self->_execute($feature, 'Status.build_default_line', 'w', 'ac');
+		my $f = Future->new;
+		$self->owner->notifier->add_child(
+			IO::Async::Timer::Countdown->new(
+				delay => 0.5,
+				remove_on_expire => !!1,
+				on_expire => sub { $f->done },
+			)->start
+		);
+
+		return $f->then(sub { $self->_execute($feature, 'Status.build_default_line', 'w', 'ac') });
 	}
 
 	return 'unimplemented';
