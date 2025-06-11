@@ -128,42 +128,6 @@ sub set_gestures
 	return 1;
 }
 
-sub check_lock_screen
-{
-	my ($self, $feature) = @_;
-
-	$self->owner->broadcast($feature->config->{command}, '-v')
-		->then(
-			sub {
-				return undef;
-			},
-			sub {
-				return Future->done(['command', shift]);
-			}
-		);
-}
-
-sub init_lock_screen
-{
-	my ($self, $feature, $enabled) = @_;
-	my $vars = $feature->vars;
-
-	my $initialized = exists $vars->{running};
-	$vars->{running} = $enabled;
-	return if $initialized;
-
-	$feature->dependencies->{'Power.suspend'}->add_execute_hook(
-		sub {
-			my ($action, $value, $result) = @_;
-			return unless $vars->{running};
-
-			if ($action eq 'w') {
-				$self->owner->broadcast($feature->config->{command});
-			}
-		}
-	);
-}
-
 sub prepare_auto_suspend
 {
 	my ($self, $feature) = @_;
@@ -239,20 +203,6 @@ sub _build_features
 				'Dunst.info',
 			],
 			needs_agent => 1,
-		},
-		lock_screen => {
-			desc => 'locks screen after long suspend',
-			mode => 'i',
-			config => {
-				command => {
-					desc => 'command to lock screen',
-					value => 'slock',
-				},
-			},
-			needs_agent => 1,
-			dependencies => [
-				'Power.suspend',
-			],
 		},
 		auto_suspend => {
 			desc => 'suspends the device on lid close',
