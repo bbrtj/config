@@ -160,7 +160,7 @@ sub set_auto_suspend
 				my $lid_state = shift;
 				return 0 if $lid_state;
 
-				$feature->dependencies->{'Power.suspend'}->execute('w', 1);
+				$feature->dependencies->{'Device.suspend'}->execute('w', 1);
 				return 1;
 			}
 		);
@@ -208,7 +208,7 @@ sub _build_features
 			desc => 'suspends the device on lid close',
 			mode => 'rw',
 			dependencies => [
-				'Power.suspend',
+				'Device.suspend',
 				'Device.lid',
 			],
 		},
