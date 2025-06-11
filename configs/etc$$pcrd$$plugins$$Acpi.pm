@@ -47,6 +47,9 @@ sub set_signal
 		elsif ($subtype eq 'brightnessdown') {
 			return $self->_execute($feature, 'Display.brightness', 'w', '-1');
 		}
+		elsif ($subtype eq 'switchmode') {
+			return $self->_execute($feature, 'Display.xrandr', 'w', 'auto');
+		}
 	}
 	elsif ($type eq 'ac_adapter') {
 		# too soon to call this - machine not yet aware of being charged / discharged
@@ -68,6 +71,7 @@ sub _build_features
 				'Sound.volume',
 				'Sound.mute',
 				'Display.brightness',
+				'Display.xrandr',
 			],
 		},
 	};
