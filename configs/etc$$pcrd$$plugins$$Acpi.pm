@@ -23,6 +23,7 @@ sub _execute
 
 	return "$depname (not functional)"
 }
+
 sub set_signal
 {
 	my ($self, $feature, $value) = @_;
@@ -31,7 +32,7 @@ sub set_signal
 
 	if ($type eq 'button') {
 		if ($subtype eq 'lid') {
-			return $self->_execute($feature, 'Control.auto_suspend', 'w', 'execute');
+			return $self->_execute($feature, 'Control.auto_suspend', 'w', PCRD::Bool->new(!!1));
 		}
 		elsif ($subtype eq 'volumeup') {
 			return $self->_execute($feature, 'Sound.volume', 'w', '+1');
@@ -43,7 +44,7 @@ sub set_signal
 			return $self->_execute($feature, 'Sound.mute', 'w', 'toggle');
 		}
 		elsif ($subtype eq 'power') {
-			return $self->_execute($feature, 'Device.poweroff', 'w', '1');
+			return $self->_execute($feature, 'Device.poweroff', 'w', PCRD::Bool->new(!!1));
 		}
 		elsif ($subtype eq 'f20') {
 			# "no microphone" button
