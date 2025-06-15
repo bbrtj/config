@@ -48,9 +48,8 @@ sub init_power
 
 			return unless $vars->{running};
 
-			my $old = $vars->{last_charging};
-			if ($result != $old) {
-				$vars->{last_charging} = $result;
+			if (!!$result != $vars->{last_charging}) {
+				$vars->{last_charging} = !!$result;
 
 				my $text = $result ? 'charging' : 'discharging';
 				my $title = ucfirst $text;
@@ -139,29 +138,29 @@ sub get_auto_suspend
 {
 	my ($self, $feature) = @_;
 
-	return $feature->vars->{active};
+	return PCRD::Bool->new($feature->vars->{active});
 }
 
 sub set_auto_suspend
 {
 	my ($self, $feature, $value) = @_;
+	state $validator = PCRD::Util::generate_validator(truefalse => 1, custom => [qw(on off)]);
+	$validator->($value);
 
 	if ($value eq 'on' || $value eq 'off') {
 		$feature->vars->{active} = $value eq 'on';
-		return 1;
+		return PCRD::Bool->new(!!1);
 	}
 
-	return 0 unless $value eq 'execute';
-	return 0 unless $feature->vars->{active};
+	return PCRD::Bool->new(!!0) unless PCRD::Util::value_to_bool($value);
+	return PCRD::Bool->new(!!0) unless $feature->vars->{active};
 
 	$feature->dependencies->{'Device.lid'}->execute('r')
 		->then(
 			sub {
 				my $lid_state = shift;
-				return 0 if $lid_state;
-
-				$feature->dependencies->{'Device.suspend'}->execute('w', 1);
-				return 1;
+				return PCRD::Bool->new(!!0) if $lid_state;
+				return $feature->dependencies->{'Device.suspend'}->execute('w', PCRD::Bool->new(!!1));
 			}
 		);
 }

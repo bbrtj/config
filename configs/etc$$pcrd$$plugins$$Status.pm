@@ -48,7 +48,6 @@ sub battery_status
 
 	return Future->wait_all($f_life, $f_capacity, $f_charging)->then(
 		sub {
-			my $battery_life = $f_life->get;
 			my $battery_capacity = $f_capacity->get;
 			my $battery_charging = $f_charging->get;
 			my $battery = '';
@@ -63,7 +62,8 @@ sub battery_status
 			my $color = $colors->[$index];
 			$battery = _colsym("$color$level", $battery_capacity);
 
-			if ($battery_life >= 0) {
+			if ($f_life->is_done) {
+				my $battery_life = $f_life->get;
 				my $hours = int($battery_life / 60);
 				my $minutes = $battery_life % 60;
 				$battery = sprintf "%s %s%d:%02d", $battery, COLOR_DIMMED, $hours, $minutes;
@@ -80,29 +80,24 @@ sub sound_status
 
 	state $sound_levels = ['', '', '', ''];
 	state $colors = [COLOR_DIMMED, COLOR_SELECTED, COLOR_SELECTED, COLOR_SELECTED, COLOR_ALERT, COLOR_URGENT];
-
-	my $color;
-	my $level;
-
 	my $f_mute = $feature->dependencies->{'Sound.mute'}->execute('r');
 	my $f_volume = $feature->dependencies->{'Sound.volume'}->execute('r');
 
 	return Future->wait_all($f_mute, $f_volume)->then(
 		sub {
 			if ($f_mute->get) {
-				$color = COLOR_DIMMED;
-				$level = '';
+				my $color = COLOR_DIMMED;
+				my $level = '';
 				return _colsym("$color$level", 'mute');
 			}
 			else {
-				my $volume = $f_volume->get;
 				return undef
-					unless $volume >= 0;
+					unless $f_volume->is_done;
 
-				$volume *= 100;
+				my $volume = $f_volume->get * 100;
 				my $index = int($volume / 25 - 0.01); # minus 0.01 to have 100 as non-alert
-				$level = $sound_levels->[$index > $#$sound_levels ? $#$sound_levels : $index];
-				$color = $colors->[$index > $#$colors ? $#$colors : $index];
+				my $level = $sound_levels->[$index > $#$sound_levels ? $#$sound_levels : $index];
+				my $color = $colors->[$index > $#$colors ? $#$colors : $index];
 
 				return _colsym("$color$level", $volume);
 			}
@@ -149,6 +144,9 @@ sub cpu_status
 			my $color = $colors->[$color_index > $#$colors ? $#$colors : $color_index];
 
 			return sprintf _colsym("%s%s", '%.1f'), $color, $cpu_indicator, $cpu;
+		},
+		sub {
+			return undef;
 		}
 	);
 }

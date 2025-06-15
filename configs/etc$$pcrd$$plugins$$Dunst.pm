@@ -48,7 +48,7 @@ sub set_info
 	my ($self, $feature, $value) = @_;
 
 	return $self->_dunstify_pcrd_input($value, 0)
-		->then(sub { 1 });
+		->then(sub { PCRD::Bool->new(!!1) });
 }
 
 sub set_error
@@ -56,7 +56,7 @@ sub set_error
 	my ($self, $feature, $value) = @_;
 
 	return $self->_dunstify_pcrd_input($value, 1)
-		->then(sub { 1 });
+		->then(sub { PCRD::Bool->new(!!1) });
 }
 
 sub _build_features
