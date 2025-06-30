@@ -1,0 +1,35 @@
+#!/usr/bin/env perl
+
+use strict;
+use warnings;
+use autodie;
+use Time::HiRes qw(time);
+
+use constant FILE => '/tmp/throttle_info';
+use constant MAX_RATE => 0.25; # seconds
+
+die 'no command supplied'
+	unless @ARGV;
+
+my $cmd = sprintf "<%s>", join '///', @ARGV;
+my $now = time;
+
+if (-e FILE) {
+	my $last_data = do {
+		open my $fh, '<:encoding(UTF-8)', FILE;
+		readline $fh;
+	};
+
+	my ($last_cmd, $last_now) = $last_data =~ m{^(<.+>) (\d+(.\d+)?)$};
+
+	die "throttled\n"
+		if $last_cmd eq $cmd && $now - $last_now < MAX_RATE;
+}
+
+{
+	open my $fh, '>:encoding(UTF-8)', FILE;
+	print {$fh} "$cmd $now";
+}
+
+exec @ARGV;
+
