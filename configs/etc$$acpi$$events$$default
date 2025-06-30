@@ -15,5 +15,5 @@
 # specified.
 
 event=.*
-action=/usr/local/bin/pcrctl Acpi signal "%e"
+action=/usr/local/bin/throttle /usr/local/bin/pcrctl Acpi signal "%e"
 
