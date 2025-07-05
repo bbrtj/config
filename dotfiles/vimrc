@@ -190,7 +190,7 @@ function! s:setPluginOptions()
 	command! Jv call jsonviewer#init()
 
 	" EDITORCONFIG
-	let g:EditorConfig_exclude_patterns = ['fugitive://.*']
+	let g:EditorConfig_exclude_patterns = ['fugitive://.*', '^.*!\w*sh$']
 
 	" TAGBAR
 	nnoremap <leader>y :TagbarToggle<CR>
