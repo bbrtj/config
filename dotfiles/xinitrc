@@ -5,6 +5,9 @@ ls -at ~ | grep ^.serverauth.* | perl -ne 'next unless $l++; chomp and unlink'
 
 # while loop allows to restart dwm without killing all windows
 while true; do
+	pkill dbus
+	export $(dbus-launch)
+
 	. ~/config/local_config.sh
 
 	# layout
