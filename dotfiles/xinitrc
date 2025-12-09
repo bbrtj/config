@@ -14,9 +14,6 @@ while true; do
 	echo dvorak > ~/.kblayout
 	kbtgl
 
-	# caps lock repat
-	xset r 66
-
 	# disable screen blacking
 	xset s off -dpms
 
