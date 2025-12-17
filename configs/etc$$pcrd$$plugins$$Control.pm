@@ -144,15 +144,16 @@ sub get_auto_suspend
 sub set_auto_suspend
 {
 	my ($self, $feature, $value) = @_;
-	state $validator = PCRD::Util::generate_validator(truefalse => 1, custom => [qw(on off)]);
+	state $validator = PCRD::Util::generate_validator(truefalse => 1, custom => ['suspend']);
 	$validator->($value);
 
-	if ($value eq 'on' || $value eq 'off') {
-		$feature->vars->{active} = $value eq 'on';
+	my $bool = PCRD::Util::value_to_bool($value);
+	if (defined $bool) {
+		$feature->vars->{active} = $bool;
 		return PCRD::Bool->new(!!1);
 	}
 
-	return PCRD::Bool->new(!!0) unless PCRD::Util::value_to_bool($value);
+	return PCRD::Bool->new(!!0) unless $value eq 'suspend';
 	return PCRD::Bool->new(!!0) unless $feature->vars->{active};
 
 	$feature->dependencies->{'Device.lid'}->execute('r')
