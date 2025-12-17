@@ -124,7 +124,86 @@ sub set_gestures
 		$feature->dependencies->{'Dunst.info'}->execute('w', "Unknown gesture,$readable_gesture");
 	}
 
-	return 1;
+	return PCRD::Bool->new(!!1);
+}
+
+sub init_kblayout
+{
+	my ($self, $feature, $enabled) = @_;
+	my $vars = $feature->vars;
+
+	return unless $enabled;
+	return unless defined $vars->{current};
+
+	# set layout on startup
+	$feature->execute('w', $vars->{current});
+}
+
+sub prepare_kblayout
+{
+	my ($self, $feature) = @_;
+	my $vars = $feature->vars;
+
+	my $last_order = 0;
+	my $layouts = $feature->config->{layouts} // {};
+	foreach my $layout_name (sort keys $layouts) {
+		my $layout = $layouts->{$layout_name};
+
+		if (!$layout->{layout}) {
+			say "no keyboard layout specified for $layout_name - skipping";
+			next;
+		}
+
+		push @{$vars->{layouts}}, $layout;
+		$layout->{order} //= $last_order;
+		$layout->{name} = $layout_name;
+		$last_order += 1;
+	}
+
+	@{$vars->{layouts}} = sort { $a->{order} <=> $b->{order} }
+		@{$vars->{layouts}};
+	%{$vars->{layouts_map}} = map { $vars->{layouts}[$_]{name} => $_ }
+		keys @{$vars->{layouts}};
+	$vars->{current} = $vars->{layouts}[0]{name}
+		if @{$vars->{layouts}} > 0;
+}
+
+sub set_kblayout
+{
+	my ($self, $feature, $layout) = @_;
+	my $vars = $feature->vars;
+
+	PCRD::X::ExecutionFailed->raise('no keyboard layouts defined')
+		unless @{$vars->{layouts}} > 0;
+
+	my $layout_ind;
+	if ($layout eq 'next') {
+		$layout_ind = $vars->{layouts_map}{$vars->{current}};
+		$layout_ind = ($layout_ind + 1) % @{$vars->{layouts}};
+	}
+	else {
+		$layout_ind = $vars->{layouts_map}{$layout};
+		PCRD::X::BadArgument->raise("invalid layout $layout")
+			unless defined $layout_ind;
+	}
+
+	my $conf = $vars->{layouts}{$layout_ind};
+	my @args = (
+		'setxkbmap',
+		'-layout',
+		$conf->{layout},
+		($conf->{variant}
+			? ('-variant', $conf->{variant})
+			: ()
+		),
+		($conf->{option}
+			? ('-option', $conf->{option})
+			: ()
+		),
+	);
+
+	return $self->owner->broadcast(@args)
+		->then(sub { PCRD::Bool->new(!!1) });
 }
 
 sub prepare_auto_suspend
@@ -186,6 +265,17 @@ sub _build_features
 			],
 			needs_agent => 1,
 		},
+		kblayout => {
+			desc => 'switch a keyboard layout',
+			mode => 'iw',
+			config => {
+				layouts => {
+					desc => 'key/value array of layouts to use (layout,variant,option,order)',
+					value => {},
+				},
+			},
+			needs_agent => 1,
+		},
 		gestures => {
 			desc => 'perform a gesture action',
 			mode => 'w',
@@ -195,7 +285,7 @@ sub _build_features
 					value => 1,
 				},
 				action => {
-					desc => 'key/value array of gesture actions (command, feature, notification)',
+					desc => 'key/value array of gesture actions (command/feature/notification/info)',
 					value => {},
 				},
 			},
