@@ -32,7 +32,7 @@ sub set_signal
 
 	if ($type eq 'button') {
 		if ($subtype eq 'lid') {
-			return $self->_execute($feature, 'Control.auto_suspend', 'w', PCRD::Bool->new(!!1));
+			return $self->_execute($feature, 'Control.auto_suspend', 'w', 'suspend');
 		}
 		elsif ($subtype eq 'volumeup') {
 			return $self->_execute($feature, 'Sound.volume', 'w', '+1');
