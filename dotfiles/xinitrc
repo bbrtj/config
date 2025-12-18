@@ -3,21 +3,17 @@
 # remove old serverauth files (except newest one)
 ls -at ~ | grep ^.serverauth.* | perl -ne 'next unless $l++; chomp and unlink'
 
+# killing dbus kills dbus windows - keep outside the loop
+pkill dbus
+export $(dbus-launch)
+
 # while loop allows to restart dwm without killing all windows
 while true; do
-	pkill dbus
-	export $(dbus-launch)
-
 	. ~/config/local_config.sh
-
-	# layout
-	echo dvorak > ~/.kblayout
-	kbtgl
 
 	# disable screen blacking
 	xset s off -dpms
 
-	fehbg
 	xcompmgr &
 
 	pkill xbindkeys
