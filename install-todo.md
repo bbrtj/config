@@ -1,5 +1,6 @@
 # Things to do
 - [ ] install PCRD on system perl
+- [ ] compile pcrctl\_fast from PCRD using fpc
 - [ ] move dotfiles files to the system (system-independent/dotfiles.pl)
 - [ ] move config files to the system (system-independent/configs.pl)
 - [ ] flatpak apps (dbeaver, file-roller, transmission etc) (with `flatpak-install` script)
@@ -9,6 +10,7 @@
 - [ ] firefox tweaks (plugins, searches)
 - [ ] cursor theme (used Vimix) into .Xresources `Xcursor.theme: Vimix-cursors`
 - [ ] install dvorak to console: https://github.com/jiangmiao/dvp
+- [ ] move wallpapers to /usr/share/wallpapers and make a symlink for the default one as default.png
 
 # Things to consider
 
