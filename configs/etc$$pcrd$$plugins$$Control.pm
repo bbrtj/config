@@ -8,6 +8,53 @@ use parent 'PCRD::Module';
 
 use constant name => 'Control';
 
+sub _make_action
+{
+	my ($self, $feature, $conf_hash) = @_;
+
+	my ($type) = grep { exists $conf_hash->{$_} } qw(command feature notification info);
+	die 'no valid hook type specified'
+		unless defined $type;
+
+	my @args = split /,/, $conf_hash->{$type};
+
+	if ($type eq 'command') {
+		return sub {
+			$self->owner->broadcast(@args);
+		};
+	}
+	elsif ($type eq 'feature') {
+		my ($module, $feature, $value) = @args;
+		return sub {
+			$self->owner->module($module)->feature($feature)
+				->execute($value ? ('w', $value) : ('r'));
+		};
+	}
+	elsif ($type eq 'notification') {
+		my $title = shift @args;
+		return sub {
+			# TODO: non-pcrd notification
+			$self->owner->broadcast(@args)->on_done(
+				sub {
+					my $content = join '', @_;
+					$feature->dependencies->{'Dunst.info'}->execute('w', "$title,$content");
+				}
+			);
+		};
+	}
+	elsif ($type eq 'info') {
+		my $title = shift @args;
+		return sub {
+			$self->owner->broadcast(@args)->on_done(
+				sub {
+					my $content = join '', @_;
+					$feature->dependencies->{'Dunst.info'}->execute('w', "$title,$content");
+				}
+			);
+		};
+	}
+}
+
 sub init_power
 {
 	my ($self, $feature, $enabled) = @_;
@@ -65,49 +112,7 @@ sub prepare_gestures
 
 	my $actions = $feature->config->{action} // {};
 	foreach my $action (keys %{$actions}) {
-		my ($type, @args) = split /,/, $actions->{$action};
-		my $code;
-
-		if ($type eq 'command') {
-			$code = sub {
-				$self->owner->broadcast(@args);
-			};
-		}
-		elsif ($type eq 'feature') {
-			my ($module, $feature, $value) = @args;
-			$code = sub {
-				$self->owner->module($module)->feature($feature)
-					->execute($value ? ('w', $value) : ('r'));
-			};
-		}
-		elsif ($type eq 'notification') {
-			my $title = shift @args;
-			$code = sub {
-				# TODO: non-pcrd notification
-				$self->owner->broadcast(@args)->on_done(
-					sub {
-						my $content = join '', @_;
-						$feature->dependencies->{'Dunst.info'}->execute('w', "$title,$content");
-					}
-				);
-			};
-		}
-		elsif ($type eq 'info') {
-			my $title = shift @args;
-			$code = sub {
-				$self->owner->broadcast(@args)->on_done(
-					sub {
-						my $content = join '', @_;
-						$feature->dependencies->{'Dunst.info'}->execute('w', "$title,$content");
-					}
-				);
-			};
-		}
-
-		die "unknown type '$type' for gesture '$action'"
-			unless $code;
-
-		$feature->vars->{actions}{$action} = $code;
+		$feature->vars->{actions}{$action} = $self->_make_action($feature, $actions->{$action});
 	}
 }
 
@@ -146,7 +151,7 @@ sub prepare_kblayout
 
 	my $last_order = 0;
 	my $layouts = $feature->config->{layouts} // {};
-	foreach my $layout_name (sort keys $layouts) {
+	foreach my $layout_name (sort keys %{$layouts}) {
 		my $layout = $layouts->{$layout_name};
 
 		if (!$layout->{layout}) {
@@ -187,7 +192,8 @@ sub set_kblayout
 			unless defined $layout_ind;
 	}
 
-	my $conf = $vars->{layouts}{$layout_ind};
+	my $conf = $vars->{layouts}[$layout_ind];
+	$vars->{current} = $conf->{name};
 	my @args = (
 		'setxkbmap',
 		'-layout',
@@ -205,6 +211,44 @@ sub set_kblayout
 	return $self->owner->broadcast(@args)
 		->then(sub { PCRD::Bool->new(!!1) });
 }
+
+sub init_wallpapers
+{
+	my ($self, $feature, $enabled) = @_;
+	my $vars = $feature->vars;
+
+	return unless $enabled;
+	return unless defined $vars->{current};
+
+	# set wallpaper on startup
+	$feature->execute('w', 'refresh');
+}
+
+sub prepare_wallpapers
+{
+	my ($self, $feature) = @_;
+
+	$feature->vars->{current} = $feature->config->{default};
+}
+
+sub set_wallpapers
+{
+	my ($self, $feature, $wallpaper) = @_;
+
+	$wallpaper = $feature->vars->{current}
+		if $wallpaper eq 'refresh';
+
+	my $wallpaper_path = $feature->config->{directory} . '/' . $wallpaper;
+	PCRD::X::BadArgument->raise("wallpaper $wallpaper_path does not exist")
+		unless -f $wallpaper_path;
+
+	$feature->vars->{current} = $wallpaper;
+	my @args = ('feh', '--bg-scale', $wallpaper_path);
+
+	return $self->owner->broadcast(@args)
+		->then(sub { PCRD::Bool->new(!!1) });
+}
+
 
 sub prepare_auto_suspend
 {
@@ -272,6 +316,20 @@ sub _build_features
 				layouts => {
 					desc => 'key/value array of layouts to use (layout,variant,option,order)',
 					value => {},
+				},
+			},
+			needs_agent => 1,
+		},
+		wallpapers => {
+			desc => 'control the wallpapers',
+			mode => 'iw',
+			config => {
+				directory => {
+					desc => 'directory with the wallpapers',
+					value => '/usr/share/wallpapers',
+				},
+				default => {
+					desc => 'default wallpaper',
 				},
 			},
 			needs_agent => 1,
