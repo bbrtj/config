@@ -1,21 +1,27 @@
 #!/usr/bin/env bash
 
 # Set up environment
+export PATH=/usr/sbin:/sbin:$PATH
 
 # system-independent stuff
 git pull
-git worktree add system-independent
+git branch -d tmp
+git worktree add -b tmp system-independent
+cd system-independent
+git branch --set-upstream-to=origin/system-independent system-independent
+git checkout system-independent
+cd ..
 
 # fonts: https://docs.slackware.com/howtos:general_admin:install_fonts
 sudo cp system-independent/fonts/icons.ttf /usr/share/fonts/TTF
-mkfontdir /usr/share/fonts/TTF
-mkfontscale /usr/share/fonts/TTF
-fc-cache -f -v
+sudo mkfontdir /usr/share/fonts/TTF
+sudo mkfontscale /usr/share/fonts/TTF
+sudo fc-cache -f -v
 
 # LONG step - upgrade existing programs (deselect kernel or reboot after it's done)
 wget https://www.slackpkg.org/stable/slackpkg-15.0.10-noarch-1.txz
 sudo installpkg slackpkg-15.0.10-noarch-1.txz
-rm https://www.slackpkg.org/stable/slackpkg-15.0.10-noarch-1.txz
+rm slackpkg-15.0.10-noarch-1.txz
 sudo slackpkg update
 sudo slackpkg upgrade slackpkg
 sudo slackpkg upgrade-all
