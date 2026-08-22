@@ -17,4 +17,5 @@
 - [ ] disable hardware acceleration?
 - [ ] check cpu frequency (`cpufreq-info`), temperature (`sensors`)
 - [ ] acpiconf program for battery levels (if available for the laptop model) (is it really needed?)
+- [ ] `echo low > /sys/class/drm/card0/device/power_dpm_force_performance_level`
 
