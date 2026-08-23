@@ -34,11 +34,13 @@ eliloconfig
 # ' resume=/dev/slacker/swap' to /boot/efi/EFI/Slackware/elilo.conf ('append')
 # '-h /dev/slacker/swap" -m "uhci-hcd:usbhid"' to initrd script
 # '-T /dev/LVM' to initrd script (to allow fstrim on luks)
+# 'radeon.cik_support=0 amdgpu.cik_support=1 amdgpu.dpm=1' for amdgpu
 ```
 - installation media is also the rescue drive. `setup` (usually) mounts everything. Besides disks, `dev`, `sys` and `proc` must be mounted with `mount --rbind` into the `mnt` directory
 
 ## configuration
 
+- performance cpu scaling! Especially before compiling stuff
 - if the kernel was not blacklisted in slackpkg, new initrd and eliloconf must be generated with installation media, or efi disk must be mounted before installing it
 - software can be taken from source mirrors to build it with different options, `source` directory. If the package was updated, use `patches/source` directory instead
 - ntpd servers need to be configured in /etc/ntp.conf
