@@ -32,7 +32,7 @@ wget https://github.com/sbopkg/sbopkg/releases/download/0.38.3/sbopkg-0.38.3-noa
 sudo installpkg sbopkg-0.38.3-noarch-1_wsr.tgz
 rm sbopkg-0.38.3-noarch-1_wsr.tgz
 sudo sbopkg -r
-sudo sqg -p "feh xbindkeys slock dunst flatpak borgbackup libqtpas rar unrar xsel wine" -o initial
+sudo sqg -p "feh xbindkeys slock dunst flatpak borgbackup libqtpas rar unrar xsel wine cowsay" -o initial
 sudo sbopkg -i initial
 
 # configure flatpak
