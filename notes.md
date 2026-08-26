@@ -46,4 +46,5 @@ eliloconfig
 - ntpd servers need to be configured in /etc/ntp.conf
 - `chmod +x` to `/etc/rc.d/` services to enable them
 - `cat /proc/acpi/wakeup`, `echo 'PNP0C0D:00' | sudo tee /sys/bus/acpi/drivers/button/unbind`
+- taking focus automatically in Wine: https://askubuntu.com/questions/299286/how-to-recover-focus-after-losing-it-while-using-wine
 
