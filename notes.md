@@ -32,7 +32,7 @@ eliloconfig
 
 # tweaks:
 # ' resume=/dev/slacker/swap' to /boot/efi/EFI/Slackware/elilo.conf ('append')
-# '-h /dev/slacker/swap" -m "uhci-hcd:usbhid"' to initrd script
+# '-h /dev/slacker/swap" -m "uhci-hcd:usbhid"' to initrd script (make sure they are not duplicated)
 # '-T /dev/LVM' to initrd script (to allow fstrim on luks)
 ```
 - installation media is also the rescue drive. `setup` (usually) mounts everything. Besides disks, `dev`, `sys` and `proc` must be mounted with `mount --rbind` into the `mnt` directory
