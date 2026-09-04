@@ -1,0 +1,4 @@
+#!/bin/sh
+pacmd load-module module-alsa-source device_id="CARD=$(perl -0pe 's/^\s*(\S+)\s\[(.*?)\s*\]:\s+(.*)\n\s*(.*)/\1\t\2\t\3\t\4/gm' /proc/asound/cards | grep 'USB.Audio' | head -n 1 | cut -f2),DEV=0"\
+ name="$(perl -0pe 's/^\s*(\S+)\s\[(.*?)\s*\]:\s+(.*)\n\s*(.*)/\1\t\2\t\3\t\4/gm' /proc/asound/cards | grep 'USB.Audio' | head -n 1 | cut -f3 | sed 's/,.*//;s/ /_/g')"
+
