@@ -5,4 +5,5 @@ if [ -x /etc/rc.d/rc.pcrd ]; then
 fi
 
 echo low > /sys/class/drm/card0/device/power_dpm_force_performance_level
+echo 8 > /sys/module/usbhid/parameters/mousepoll
 
